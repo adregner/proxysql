@@ -288,7 +288,8 @@ UNIT_TESTS := smoke_test-t query_cache_unit-t query_processor_unit-t \
 	gtid_utils_unit-t \
 	genai_mysql_catalog_unit-t \
 	admin_disk_upgrade_unit-t \
-	glovars_unit-t
+	glovars_unit-t \
+	pgbouncer_config_parser_unit-t
 
 .PHONY: all
 all: $(UNIT_TESTS)
@@ -310,6 +311,17 @@ $(ODIR)/tap_noise_stubs.o: | $(ODIR)
 ezoption_parser_unit-t: ezoption_parser_unit-t.cpp $(ODIR)/tap.o $(ODIR)/tap_noise_stubs.o
 	$(CXX) $< $(ODIR)/tap.o $(ODIR)/tap_noise_stubs.o \
 		-I$(TAP_IDIR) -I$(PROXYSQL_PATH)/include \
+		$(STDCPP) -O0 -ggdb $(WGCOV) $(LWGCOV) -lpthread -o $@
+
+# PgBouncer config parser: standalone test (no libproxysql.a needed)
+PGBOUNCER_COMPAT_SRCS := $(PROXYSQL_PATH)/lib/pgbouncer_compat/PgBouncer_ConfigParser.cpp \
+	$(PROXYSQL_PATH)/lib/pgbouncer_compat/PgBouncer_AuthFileParser.cpp \
+	$(PROXYSQL_PATH)/lib/pgbouncer_compat/PgBouncer_HBAParser.cpp
+
+pgbouncer_config_parser_unit-t: pgbouncer_config_parser_unit-t.cpp $(ODIR)/tap.o $(ODIR)/tap_noise_stubs.o $(PGBOUNCER_COMPAT_SRCS)
+	$(CXX) $< $(PGBOUNCER_COMPAT_SRCS) $(ODIR)/tap.o $(ODIR)/tap_noise_stubs.o \
+		-I$(TAP_IDIR) -I$(PROXYSQL_PATH)/include \
+		-I$(PROXYSQL_PATH)/lib/pgbouncer_compat \
 		$(STDCPP) -O0 -ggdb $(WGCOV) $(LWGCOV) -lpthread -o $@
 
 # Pattern rule: all unit tests use the same compile + link flags.
